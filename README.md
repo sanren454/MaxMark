@@ -2,7 +2,7 @@
 This is the official implementation of MaxMark: High-Capacity Diffusion-Native Watermarking via Robust and Invertible Latent Embedding, accepted by CVPR 2026.
 # Method
 
-![fig_flow_01](.\assets\fig_flow_01.png)
+![fig_flow_01](assets/fig_flow_01.png)
 
 We propose MaxMark, a latent-based watermarking method that enables high-capacity and reliable watermark extraction while preserving image quality. Achieving high capacity requires three properties: (1) a robust embedding strategy that places information in reliable latent regions, (2) a mechanism to map perturbed latents back to the LDM’s native Gaussian prior, and (3) minimal loss in both embedding and extraction to ensure accurate recovery. MaxMark satisfies these requirements through a robust watermark embedding module, which enhances and embeds the watermark payload, and a distribution transformation module, which uses an invertible neural network (INN) to map the watermarked latent back to the standard Gaussian prior. These modules are designed by our observations that sign bits serve as reliable information carriers, ECC parameters can be automatically tuned for stability, and invertibility is critical for minimizing recovery loss.
 
