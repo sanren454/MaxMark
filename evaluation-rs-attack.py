@@ -46,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--secret_length', default=48, type=int)
     parser.add_argument('--num_inference_steps', default=50, type=int)
     parser.add_argument('--guidancescale', default=7.5, type=float)
+    parser.add_argument('--guidancescale_fanyan', default=1.0, type=float)
     parser.add_argument('--reverse_inference_steps', default=50, type=int)
     parser.add_argument('--place_mode',default='PLACE_SEQUENTIAL')
     parser.add_argument('--threshold',default=1e-6,type=float)
@@ -192,6 +193,7 @@ if __name__ == '__main__':
         latents=z_norm,guidance_scale=args.guidancescale).images[0]
         img_list.append(img1)
 
+        img1_attacked = img1
         if args.brightness != None:
             img1_attacked = transforms.ColorJitter(brightness=args.brightness)(img1)
         if args.noise != None:
@@ -277,4 +279,3 @@ if __name__ == '__main__':
         log_to_file('eva_log_paper.txt',args.ft_id, args.adapter_id,args.secret_length,0, 0, args.model,acc,ACC_sorted[0],ACC_sorted[-1],sp)
 
 
-    

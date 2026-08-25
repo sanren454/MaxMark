@@ -1,0 +1,16 @@
+seed: 2026
+latent_shape: [4, 64, 64]
+secret_length: 16384
+place_mode: PLACE_SEQUENTIAL
+margin: 10.0
+epochs: 400
+learning_rate: 1.0e-5
+adam_betas: [0.5, 0.999]
+gradient_clip: 1.0
+lambda_reg: 0.1
+mmd_max_samples: 512
+mmd_bandwidths: [0.2, 0.5, 1.0, 2.0, 5.0]
+loss_variants:
+  - mle_moment
+  - mle_only
+  - mle_mmd

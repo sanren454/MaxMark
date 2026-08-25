@@ -433,11 +433,25 @@ def bitarray_to_parity_blocks_8bit(bit_array, paras, GF):
     return [GF(row) for row in sym_matrix]
 
 
-from pyldpc import make_ldpc,encode, decode,get_message
+try:
+    from pyldpc import make_ldpc, encode, decode, get_message
+except ImportError:
+    make_ldpc = encode = decode = get_message = None
+
+
+def _require_pyldpc():
+    if make_ldpc is None:
+        raise ImportError(
+            "PyLDPC is required only for LDPC experiments. "
+            "Install pyldpc==0.7.9 to use these functions; RS evaluation does not need it."
+        )
+
+
 def simulate_Pfail(n, d_v, d_c, p_error,trails=20):
     """
     Monte-Carlo estimation of the block failure probability for LDPC(n, d_v, d_c) under BSC(p_error).
     """
+    _require_pyldpc()
     H, G = make_ldpc(n, d_v, d_c, systematic=True, sparse=True)
     k = G.shape[1]
     snr_linear = (1 - p_error) / p_error
@@ -560,6 +574,7 @@ def generate_ldpc_for_block_size(target_block_size: int, p_error: float = 0.1):
     根据目标块大小生成兼容的 LDPC 码
     返回 G, H, actual_k, n, d_v, d_c
     """
+    _require_pyldpc()
     best_match = None
     min_diff = float('inf')
     
@@ -629,6 +644,7 @@ def encode_with_pyldpc(secret_bits: np.ndarray, paras, target_block_size,p_error
     """
     使用 pyldpc 库进行编码，自动适应块大小
     """
+    _require_pyldpc()
     # 1. 生成适配的 LDPC 码
     G, H, actual_k, n, d_v, d_c = paras
     
@@ -671,6 +687,7 @@ def decode_with_pyldpc(received_bits: np.ndarray, actual_k: int, n: int, d_v: in
     """
     使用 pyldpc 库进行解码
     """
+    _require_pyldpc()
     # 1. 验证输入长度
     if len(received_bits) % n != 0:
         raise ValueError(f"Received bits length {len(received_bits)} is not a multiple of codeword length {n}")

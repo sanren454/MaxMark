@@ -1,0 +1,19 @@
+model_path: /root/autodl-tmp/models/stable-diffusion-v1-5
+dataset: Gustavosta/Stable-Diffusion-Prompts
+inn_checkpoint: /root/autodl-tmp/weights/pretrained_inn_PLACE_SEQUENTIAL_final.pth
+output_dir: /root/autodl-tmp/maxmark-runs/minimal
+secret_length: 1024
+total_size: 16384
+data_backups: 3
+ecc_backups: 5
+margin: 10.0
+num_samples: 1
+seed: 2026
+generation_guidance_scale: 7.5
+reverse_guidance_scale: 1.0
+num_inference_steps: 50
+reverse_inference_steps: 50
+dtype: fp16
+attacks:
+  - clean
+  - jpeg25

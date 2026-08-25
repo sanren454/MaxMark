@@ -40,7 +40,7 @@ def get_dataset(args):
             dataset = dataset['annotations']
             prompt_key = 'caption'
     elif 'Gustavosta/Stable-Diffusion-Prompts' in args.dataset:
-        dataset = load_dataset('../Stable-Diffusion-Prompts/data')['test']
+        dataset = load_dataset(args.dataset)['test']
         prompt_key = 'Prompt'
     else:
         dataset = load_dataset(args.dataset)['test']
@@ -104,7 +104,8 @@ def reverse(image,pipe,args,prompt=''):
     img = transform_img(image,args.image_length).unsqueeze(0).to(pipe.vae.dtype).to(pipe.device)
     image_latents=get_image_latents(pipe, img, sample=False)
     image_latents=image_latents.to(pipe.unet.dtype)
-    inverted_latents = pipe(prompt=prompt, latents=image_latents, num_inference_steps=args.reverse_inference_steps, output_type="latent",guidance_scale=args.guidancescale)
+    reverse_guidance = getattr(args, "guidancescale_fanyan", args.guidancescale)
+    inverted_latents = pipe(prompt=prompt, latents=image_latents, num_inference_steps=args.reverse_inference_steps, output_type="latent",guidance_scale=reverse_guidance)
     inverted_latents = inverted_latents.images
     pipe.scheduler = curr_scheduler
     pipe.vae.to(pipe.unet.dtype) 
@@ -451,8 +452,10 @@ def embed_secret_in_latent_rs(secret_length, total_info_size, paras, GF, rs, bac
         
         # 复制冗余位
         parity_len = len(parity_flat_np)
-        backup_counts = (total_info_size - secret_length) // parity_len
-        backup_counts = min(backup_counts,backup_r)
+        available_for_parity = total_info_size - len(secret_backuped)
+        if available_for_parity < 0:
+            raise ValueError("原始数据备份长度超过 latent 容量。")
+        backup_counts = min(available_for_parity // parity_len, backup_r)
         parity_backup = np.tile(parity_flat_np, backup_counts)
         # 填充剩余的位
         s = total_info_size-len(secret) - len(parity_backup)

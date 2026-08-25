@@ -5,7 +5,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
 from util.utils import *
-from .newWm_v4 import *
+from newWm_v4 import *
 
 import argparse
 import torch
