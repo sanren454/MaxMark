@@ -17,6 +17,8 @@ OUTPUT_ROOT="${MAXMARK_OUTPUT_DIR:-/root/autodl-tmp/maxmark-runs}"
 SEED="${MAXMARK_SEED:-2026}"
 TRAIN_EPOCHS="${TRAIN_EPOCHS:-400}"
 EVAL_NUM_SAMPLES="${EVAL_NUM_SAMPLES:-10}"
+KEYED_EVAL_NUM_SAMPLES="${KEYED_EVAL_NUM_SAMPLES:-3}"
+KEYED_EMBEDDING_SLOTS="${KEYED_EMBEDDING_SLOTS:-8192}"
 PROMPT_FILE="${MAXMARK_PROMPT_FILE:-${ROOT_DIR}/configs/prompts.txt}"
 
 mkdir -p "${OUTPUT_ROOT}/logs"
@@ -72,6 +74,77 @@ evaluate_checkpoint() {
     2>&1 | tee "${OUTPUT_ROOT}/logs/${label}_${attack}.log"
 }
 
+evaluate_keyed_checkpoint() {
+  local checkpoint="$1"
+  local attack="$2"
+  local samples="$3"
+  local output_dir="${OUTPUT_ROOT}/evaluation/keyed_existing/${attack}"
+  if [[ -z "${MAXMARK_POSITION_KEY:-}" ]]; then
+    echo "MAXMARK_POSITION_KEY is required for keyed evaluation" >&2
+    exit 2
+  fi
+  if [[ -z "${MAXMARK_POSITION_TRIGGER:-}" ]]; then
+    echo "MAXMARK_POSITION_TRIGGER is required for keyed evaluation" >&2
+    exit 2
+  fi
+  "${PYTHON_BIN}" "${ROOT_DIR}/scripts/evaluate_repro.py" \
+    --model_path "${MODEL_PATH}" \
+    --inn_checkpoint "${checkpoint}" \
+    --dataset "${DATASET_PATH}" \
+    --prompt_file "${PROMPT_FILE}" \
+    --secret_length 1024 \
+    --total_size 16384 \
+    --data_backups 3 \
+    --ecc_backups 5 \
+    --margin 10 \
+    --num_samples "${samples}" \
+    --seed "${SEED}" \
+    --generation_guidance_scale 7.5 \
+    --reverse_guidance_scale 1.0 \
+    --num_inference_steps 50 \
+    --reverse_inference_steps 50 \
+    --dtype fp16 \
+    --attack "${attack}" \
+    --place_mode PLACE_KEYED \
+    --embedding_slots "${KEYED_EMBEDDING_SLOTS}" \
+    --position_key_env MAXMARK_POSITION_KEY \
+    --position_trigger_env MAXMARK_POSITION_TRIGGER \
+    --position_nonce experiment-v1 \
+    --output_dir "${output_dir}" \
+    --local_files_only \
+    2>&1 | tee "${OUTPUT_ROOT}/logs/keyed_existing_${attack}.log"
+}
+
+evaluate_subset_checkpoint() {
+  local checkpoint="$1"
+  local attack="$2"
+  local samples="$3"
+  local output_dir="${OUTPUT_ROOT}/evaluation/subset_existing/${attack}"
+  "${PYTHON_BIN}" "${ROOT_DIR}/scripts/evaluate_repro.py" \
+    --model_path "${MODEL_PATH}" \
+    --inn_checkpoint "${checkpoint}" \
+    --dataset "${DATASET_PATH}" \
+    --prompt_file "${PROMPT_FILE}" \
+    --secret_length 1024 \
+    --total_size 16384 \
+    --data_backups 3 \
+    --ecc_backups 5 \
+    --margin 10 \
+    --num_samples "${samples}" \
+    --seed "${SEED}" \
+    --generation_guidance_scale 7.5 \
+    --reverse_guidance_scale 1.0 \
+    --num_inference_steps 50 \
+    --reverse_inference_steps 50 \
+    --dtype fp16 \
+    --attack "${attack}" \
+    --place_mode PLACE_SEQUENTIAL_SUBSET \
+    --embedding_slots "${KEYED_EMBEDDING_SLOTS}" \
+    --output_dir "${output_dir}" \
+    --local_files_only \
+    2>&1 | tee "${OUTPUT_ROOT}/logs/subset_existing_${attack}.log"
+}
+
 minimal() {
   require_model_path
   if [[ -z "${EXISTING_INN}" || ! -f "${EXISTING_INN}" ]]; then
@@ -80,6 +153,26 @@ minimal() {
   fi
   evaluate_checkpoint "${EXISTING_INN}" existing clean 1
   evaluate_checkpoint "${EXISTING_INN}" existing jpeg25 1
+}
+
+keyed_minimal() {
+  require_model_path
+  if [[ -z "${EXISTING_INN}" || ! -f "${EXISTING_INN}" ]]; then
+    echo "MAXMARK_EXISTING_INN must point to the existing INN checkpoint" >&2
+    exit 2
+  fi
+  evaluate_keyed_checkpoint "${EXISTING_INN}" clean "${KEYED_EVAL_NUM_SAMPLES}"
+  evaluate_keyed_checkpoint "${EXISTING_INN}" jpeg25 "${KEYED_EVAL_NUM_SAMPLES}"
+}
+
+subset_minimal() {
+  require_model_path
+  if [[ -z "${EXISTING_INN}" || ! -f "${EXISTING_INN}" ]]; then
+    echo "MAXMARK_EXISTING_INN must point to the existing INN checkpoint" >&2
+    exit 2
+  fi
+  evaluate_subset_checkpoint "${EXISTING_INN}" clean "${KEYED_EVAL_NUM_SAMPLES}"
+  evaluate_subset_checkpoint "${EXISTING_INN}" jpeg25 "${KEYED_EVAL_NUM_SAMPLES}"
 }
 
 train_all() {
@@ -132,6 +225,12 @@ case "${PHASE}" in
   minimal)
     minimal
     ;;
+  keyed-minimal)
+    keyed_minimal
+    ;;
+  subset-minimal)
+    subset_minimal
+    ;;
   train)
     train_all
     ;;
@@ -145,7 +244,7 @@ case "${PHASE}" in
     evaluate_all
     ;;
   *)
-    echo "Usage: $0 {preflight|minimal|train|evaluate|all}" >&2
+    echo "Usage: $0 {preflight|minimal|subset-minimal|keyed-minimal|train|evaluate|all}" >&2
     exit 2
     ;;
 esac

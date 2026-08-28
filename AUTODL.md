@@ -46,11 +46,21 @@ AutoDL:
 ```bash
 git pull --ff-only
 bash scripts/run_autodl.sh minimal
+bash scripts/run_autodl.sh subset-minimal
+bash scripts/run_autodl.sh keyed-minimal
 bash scripts/run_autodl.sh train
 bash scripts/run_autodl.sh evaluate
 ```
 
-`minimal` is the stop gate: it must produce one clean and one JPEG25 full
-generate -> attack -> DDIM inversion -> INN reverse -> RS decode result before
-running the three training ablations. `evaluate` writes both aggregate results
-and paired differences against `mle_moment`.
+`minimal` verifies the original full-slot path. `subset-minimal` uses the same
+8192-slot payload as the keyed experiment but places it sequentially, isolating
+the effect of reducing occupied slots from the effect of changing locations.
+`keyed-minimal` reuses the existing checkpoint and tests correct keyed positions
+against wrong-key, wrong-trigger, and wrong-nonce reads on the same recovered
+latent. Its key and trigger are read from the server-side `.env` and are not
+written to command or environment artifacts.
+`evaluate` writes both aggregate results and paired differences against
+`mle_moment`.
+
+The experiment design and stop criteria are recorded in
+`reports/keyed_latent_position_watermark_plan.md`.

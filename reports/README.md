@@ -20,12 +20,21 @@ Configure the variables from `.env.example`, then run:
 git pull --ff-only
 bash scripts/run_autodl.sh preflight
 bash scripts/run_autodl.sh minimal
+bash scripts/run_autodl.sh subset-minimal
 bash scripts/run_autodl.sh train
 bash scripts/run_autodl.sh evaluate
 ```
 
 The runner loads the repository-local `.env` automatically. See `AUTODL.md` for
 the private Git and AutoDL split workflow.
+
+The position-key experiment is specified in
+`keyed_latent_position_watermark_plan.md` and can be started after the original
+minimal stop gate with:
+
+```bash
+bash scripts/run_autodl.sh keyed-minimal
+```
 
 For one uninterrupted run:
 
